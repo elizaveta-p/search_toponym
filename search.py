@@ -36,7 +36,8 @@ search_apikey = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
 # python search.py Москва, ул. Ак. Королева, 12
 # Тогда запрос к геокодеру формируется следующим образом:
 toponym_to_find = " ".join(sys.argv[1:])
-# toponym_to_find = 'Москва, ул. Ак. Королева, 12'
+# toponym_to_find = 'США, Фишерсвилл'
+# toponym_to_find = "Москва, ул. Ак. Королева, 12"
 
 geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
 
@@ -86,35 +87,48 @@ if not response:
 
 
 json_response = response.json()
-# pprint(json_response)
+pprint(json_response)
 # Получаем первую найденную организацию.
-organization = json_response["features"][0]
-# Название организации.
-org_name = organization["properties"]["CompanyMetaData"]["name"]
-# Адрес организации.
-org_address = organization["properties"]["CompanyMetaData"]["address"]
-org_working_time = organization['properties']['CompanyMetaData']['Hours']['text']
+pts = [f"{toponym_longitude},{toponym_lattitude},pm2rdm"]
+information = []
+for i in range(len(json_response["features"])):
+    organization = json_response["features"][i]
+    # Название организации.
+    org_name = organization["properties"]["CompanyMetaData"]["name"]
+    # Адрес организации.
+    org_address = organization["properties"]["CompanyMetaData"]["address"]
+    if "Hours" not in organization['properties']['CompanyMetaData'].keys():
+        color = "gr"
+    elif 'TwentyFourHours' in organization['properties']['CompanyMetaData']["Hours"]['Availabilities'][0].keys():
+        color = 'gn'
+    else:
+        color = 'bl'
 
-# Получаем координаты ответа.
-point = organization["geometry"]["coordinates"]
-org_point = "{0},{1}".format(point[0], point[1])
+    # Получаем координаты ответа.
+    point = organization["geometry"]["coordinates"]
+    org_point = "{0},{1}".format(point[0], point[1])
 
-spn = count_spn([toponym_longitude, toponym_lattitude], point)
-snippet = {
-    "имя": org_name,
-    "адрес": org_address,
-    "рабочее время": org_working_time,
-    "расстояние": str(lonlat_distance([float(toponym_longitude), float(toponym_lattitude)],
-                                      [float(point[0]), float(point[1])]) // 1000) + ' км'
-}
+    # spn = count_spn([toponym_longitude, toponym_lattitude], point)
+    pt = f"{org_point},pm2{color}m"
+    pts.append(pt)
+    snippet = {
+        "имя": org_name,
+        "адрес": org_address,
+        "расстояние": str(lonlat_distance([float(toponym_longitude), float(toponym_lattitude)],
+                                          [float(point[0]), float(point[1])]) // 1000) + ' км'
+    }
 
-snippet = '\n'.join(['\n'.join([f"{x}: ", snippet[x]]) for x in snippet.keys()])
-
+    snippet = '\n'.join(['\n'.join([f"{x}: ", snippet[x]]) for x in snippet.keys()])
+    information.append(snippet)
+    if i == 10:
+        break
+pts = '~'.join(pts)
+information = '\n\n'.join(information)
 # Собираем параметры для запроса к StaticMapsAPI:
 map_params = {
-    "spn": spn,
+    # "spn": spn,
     "l": "map",
-    "pt": f"{toponym_longitude},{toponym_lattitude},pm2am~{org_point},pm2bm"
+    "pt": pts
 }
 
 map_api_server = "http://static-maps.yandex.ru/1.x/"
@@ -126,7 +140,7 @@ im = Image.open(bytes_im)
 # print(im.size)
 # im.show()
 app = QApplication(sys.argv)
-ex = MyWidget(im, snippet)
+ex = MyWidget(im, information)
 ex.show()
 sys.exit(app.exec_())
 # Создадим картинку
