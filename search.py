@@ -35,8 +35,8 @@ search_apikey = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
 # Пусть наше приложение предполагает запуск:
 # python search.py Москва, ул. Ак. Королева, 12
 # Тогда запрос к геокодеру формируется следующим образом:
-# toponym_to_find = " ".join(sys.argv[1:])
-toponym_to_find = 'Москва, ул. Ак. Королева, 12'
+toponym_to_find = " ".join(sys.argv[1:])
+# toponym_to_find = 'Москва, ул. Ак. Королева, 12'
 
 geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
 
